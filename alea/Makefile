@@ -8,13 +8,13 @@ appelf: appelf.f hasard.o Makefile
 	gfortran appelf.f hasard.o -o appelf 
 
 appelc: appelc.c hasard.o Makefile
-	gcc appelc.c hasard.o -o appelc -lm
+	gcc appelc.c hasard.o -o appelc -lm -fPIC
 
 hasard.o:hasard.c hasard.h Makefile
-	gcc  -c hasard.c -Wall -O3
+	gcc  -c hasard.c -Wall -O3 -fPIC
 
 hasardcpp.o:hasardcpp.cpp Makefile
-	g++  -c hasardcpp.cpp -Wall -O3
+	g++  -c hasardcpp.cpp -Wall -O3 -fPIC
 
 install: libh.a Makefile
 	cp -f libh.a ~/lib/

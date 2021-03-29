@@ -18,7 +18,179 @@ using namespace std;
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <netdb.h> 
+#include <netdb.h>
+
+double nbPtsEntiersCubique(uint R,uint Rmax)
+// Rmax a la valeur 256 par defaut et peut etre omise
+// si R>Rmax utilise la formule asymptotiquement vraie 4*Pi*R*R
+// retourne le nombre de point du cube a coordonnes entieres dont la distance
+// au centre est : R-1/2 < d <  R+1/2.
+// place maximum prise = Rmax doubles par defaut 256 doubles
+// le temps pour creer le vecteur pour 256 est ~0.6 secondes
+{
+  if (R>Rmax)
+    return  M_PI*4*R*R;
+  static vector<double> norme;
+  if (R>=norme.size())
+    {
+      int n = (int)R+5;
+      norme.clear();
+      norme.resize(n,0);
+      for(int ix=-n+1;ix<n;ix++)
+	for(int iy=-n+1;iy<n;iy++)
+	  for(int iz=-n+1;iz<n;iz++)
+	    {
+	      double d2 = (ix)*(ix) + (iy)*(iy) + (iz)*(iz);
+	      int k = (uint)round(sqrt(d2));
+	      if (k<n)
+		norme[k]++;
+	    }
+    }
+  return norme[R];
+}     // FIN double nbPtsEntiersCubique(uint R,uint Rmax)
+// ************************************************************************
+
+double nbPtsEntiersCarre(uint R,uint Rmax)
+// Rmax a la valeur 4096 par defaut et peut etre omise
+// si R>Rmax utilise la formule asymptotiquement vraie 2*Pi*R
+// retourne ne nombre de point du carre a coordonnes entieres dont la distance
+// au centre est : R-1/2 < d <  R+1/2.
+// place maximum prise = Rmax doubles par defaut 4096 doubles
+// le temps pour creer le vecteur pour 4096 est ~0.3 secondes
+{
+  if (R>Rmax)
+    return  2*M_PI*R;
+  static vector<double> norme;
+  if (R>=norme.size())
+    {
+      int n = (int)R+20;
+      norme.clear();
+      norme.resize(n,0);
+      for(int ix=-n+1;ix<n;ix++)
+	for(int iy=-n+1;iy<n;iy++)
+	  {
+	    double d2 = (ix)*(ix) + (iy)*(iy);
+	    int k = (uint)round(sqrt(d2));
+	    if (k<n)
+	      norme[k]++;
+	  }
+    }
+  return norme[R];
+}     // FIN double nbPtsEntiersCarre(uint R,uint Rmax)
+// ************************************************************************
+
+int nbPtsEntiersCubeExact(int R2,int R2maxp)
+// retourne le nombre de points du cube a coordonnees entieres
+// dont le carre de la distance a l'origine est R2.
+// au premier appel on calcule par enumeration lle table :
+//   i) soit on a donne un deuxieme argument qui est la longueur max
+//      que l'on va utiliser, on utiliser alors (max(128,cette valeur))
+//   ii) si pas fourni on prend _R2MAXDEF
+// si R2 demande le necessite ON REFAIT TOUT AVEC le nouveau R2Max
+// EN RESUME:
+// si on sait que l'on va utiliser avec la plus grande valeur RM
+// on commence par un appel nbPtsEntiersCubeExact(x,RM);
+// puis nbPtsEntiersCubeExact(y);
+#define _R2MAXDEF3D 4096
+{
+  static map<int,int> A;
+  static int R2max = 0;
+  if ((R2>R2max) || (R2max==0))
+    {
+      // printf("Entering wit R2max= %d ",R2max);
+      R2max = _MAX(_MAX(R2maxp,R2),_R2MAXDEF3D);
+      int cote = (int)(sqrt(R2max)+0.5);
+      A.clear();
+      for (int x=-cote;x<=cote;x++)
+	for (int y=-cote;y<=cote;y++)
+	  for (int z=-cote;z<=cote;z++)
+	    {
+	      int d2 = x*x + y*y + z*z;
+	      if (d2>cote*cote)
+		continue;
+	      A[d2] += 1;
+	    }
+      // printf("leaving with R2max= %d cote= %d  A.size= %lu\n",R2max,cote,A.size());
+    }
+  return A[R2];
+}     // FIN int nbPtsEntiersCubeExact(int R2)
+// **********************************************************************
+
+int nbPtsEntiersCarreExact(int R2,int R2maxp)
+// retourne le nombre de points du cube a coordonnees entieres
+// dont le carre de la distance a l'origine est R2.
+// au premier appel on calcule par enumeration lle table :
+//   i) soit on a donne un deuxieme argument qui est la longueur max
+//      que l'on va utiliser, on utiliser alors (max(128,cette valeur))
+//   ii) si pas fourni on prend _R2MAXDEF
+// si R2 demande le necessite ON REFAIT TOUT AVEC le nouveau R2Max
+// EN RESUME:
+// si on sait que l'on va utiliser avec la plus grande valeur RM
+// on commence par un appel nbPtsEntiersCubeExact(x,RM);
+// puis nbPtsEntiersCubeExact(y);
+#define _R2MAXDEF2D 16384
+{
+  static map<int,int> A;
+  static int R2max = 0;
+  if ((R2>R2max) || (R2max==0))
+    {
+      //printf("Entering wit R2max= %d ",R2max);
+      R2max = _MAX(_MAX(R2maxp,R2),_R2MAXDEF2D);
+      int cote = (int)(sqrt(R2max)+0.5);
+      A.clear();
+      for (int x=-cote;x<=cote;x++)
+	for (int y=-cote;y<=cote;y++)
+	  {
+	    int d2 = x*x + y*y;
+	    if (d2>cote*cote)
+	      continue;
+	    A[d2] += 1;
+	  }
+      //printf("leaving with R2max= %d cote= %d  A.size= %lu\n",R2max,cote,A.size());
+    }
+  return A[R2];
+}     // FIN int nbPtsEntiersCarreExact(int R2)
+// **********************************************************************
+
+vector<string> findAllInString(string st,string variableName)
+// trouve les occurences de name=XXX ou nameXXX dans findInString
+// retourne le vecteur des XXX
+// examples findAllInString("L=13 L= 13 L=14 blabla autreL=toto ","L=") retournera "13", "14", "toto"
+// attention il faut donc plutot findAllInString("L=13 L= 13 L=14 blabla autreL=toto "," =")
+// mais ds ce cas le PREMIER sera saute ... (en general 1er= #)
+{
+  vector<string> ans;
+  //  char stc[ans.size()];
+  uint found = -1;
+  for(;;)
+    {
+      found = st.find(variableName,found+1);
+      if (found==(uint)(-1))
+	break;
+      found += variableName.size();
+      if (st[found]==' ')
+	found++; // on enleve l'eventuel ' ' apres =
+      uint found1 = found;
+      for(;;)
+	{
+	  found1++;
+	  if (found1==ans.size())
+	    break;
+	  if ((st[found1]==' ')||(st[found1]=='\t'))
+	    break;
+	}
+      string res = st.substr(found,found1-found);
+      ans.push_back(res);
+    }
+  set<string> ansS;
+  for(uint i=0;i<ans.size();i++)
+    ansS.insert(ans[i]);
+  ans.clear();
+  for(set<string>::iterator it=ansS.begin();it!=ansS.end();++it)
+    ans.push_back(*it);
+  return ans;
+}     // FIN vector<string> findAllInString(string st,string variableName)
+// **********************************************************************
 
 int appendtofileblocking(char *filename,char *data,int timeout_insec)
 /*               PERMET DES ACCES CONCURENTS AU MEME FICHIER SANS TIMER
@@ -854,7 +1026,7 @@ int ouvreFileNoClobber(char *nameout,FILE **ftout)
   // fichier existe deja
   fclose(ft);
   int n = strlen(nameout);
-  for(int i=0;i<1000;i++)
+  for(int i=1;i<1000;i++)
     {
       sprintf(nameout+n,"_%d",i);
       ft = fopen(nameout,"r");
@@ -870,6 +1042,63 @@ int ouvreFileNoClobber(char *nameout,FILE **ftout)
     }
   return 3; // pas pu
 }     // FIN int ouvreFileNoClobber(char *nameout,FT *ftout)
+// **********************************************************************
+
+void ouvreFileNoClobberForceExit(char *nameout,FILE **ftout,int force)
+// IL FAUT QUE nameout PUISSE ACCOMODER 5 CARACTERES DE PLUS !!!
+// ouvre en ecriture et si existe deja rajoute un suffixe 
+// pas plus de 1000 suffixes
+// si force=1 ne tenete pas de rajouter des suffixes
+// exit si pas pu ouvrir
+{
+  FILE *ft;
+  ft = fopen(nameout,"r");
+  if (ft==NULL)
+    {
+      ft = fopen(nameout,"w");
+      if (ft==NULL)
+	{
+	  printf("#ouvreFileNoClobberForceExit :pas pu ouvrir %s en ecriture",nameout);
+	  exit(1024);
+	}
+      *ftout = ft;
+      return ;
+    }
+  // fichier existe deja
+  fclose(ft);
+  if (force)
+    {
+      ft = fopen(nameout,"w");
+      if (ft==NULL)
+	{
+	  printf("#ouvreFileNoClobberForceExit : pas pu ouvrir %s en ecriture",nameout);
+	  exit(1024);
+	}
+      *ftout = ft;
+      return ;
+    }
+  // fichier existe et pas force
+  int n = strlen(nameout);
+  for(int i=1;i<1000;i++)
+    {
+      sprintf(nameout+n,"_%d",i);
+      ft = fopen(nameout,"r");
+      if (ft==NULL)
+        {
+          ft = fopen(nameout,"w");
+          if (ft==NULL)
+	    {
+	      printf("#ouvreFileNoClobberForceExit : pas pu ouvrir %s en ecriture",nameout);
+	      exit(1024);
+	    }
+          *ftout = ft;
+          return ;
+        }
+      fclose(ft);
+    }
+  printf("#ouvreFileNoClobberForceExit : %s plus de suffixe disponible",nameout);
+  exit(1024);
+}     // FIN void ouvreFileNoClobberExit(char *nameout,FT *ftout,int force)
 // **********************************************************************
 
 distribution::distribution(double basep){ntotalObs=0;nValeur=0;base = basep;};
@@ -966,5 +1195,75 @@ char *imageOfFile(char *filename,int *sizeOfFile)
       return NULL;
     }
   return buf;
-}     // FIN int sizeOfFileInBytes(char *filename)
+}     // FIN int *imageOfFile(char *filename,int *sizeOfFile)
 // **************************************************************************
+
+//************************************************************************
+//                      MESURE DU TEMSP ECOULE : class tempeur
+//************************************************************************
+tempeur::tempeur(){times(&timebufbegin);conversion = sysconf(_SC_CLK_TCK);}
+
+void tempeur::print(FILE*ft)
+{                                                                     
+  struct tms timebufnow;                                              
+  times(&timebufnow);
+  int temps  = (int)(timebufnow.tms_utime - timebufbegin.tms_utime +  
+		     timebufnow.tms_stime - timebufbegin.tms_stime);  
+  fprintf(ft,"# duree_depuis_debut= %.15lg seconde(s)\n",             
+            temps/conversion);                                          
+}     // FIN void tempeur::print(FILE*ft);
+// ********************************************************************
+
+double tempeur::getInSecond()
+{                                                                     
+  struct tms timebufnow;                                              
+  times(&timebufnow);
+  int temps  = (int)(timebufnow.tms_utime - timebufbegin.tms_utime +  
+		     timebufnow.tms_stime - timebufbegin.tms_stime);  
+  return temps/conversion;                                          
+}     // FIN double tempeur::getInSecond()
+// ********************************************************************
+
+void tempeur::reset(){times(&timebufbegin);}
+
+vector<string> tokenize(char *input,char *delim)
+// split en token qui sont separes par des separateur.
+// les separateurs sont tous les caracteres de delim
+// les separateurs en debut ou fin sont ignores
+// plusieurs separeteurs consecutifs dont merge en un seul
+{
+  vector<string> rez;
+  for(;;)
+    {
+      char *aux = strtok(input,delim);
+      if (aux==NULL)
+        break;
+      rez.push_back(string(aux));
+      input = NULL;
+    }
+  return rez;
+}     // FIN vector<char*> tokenize(char *input,char *delim)
+// **********************************************************************
+
+string strReplace(string st,string target,string repl)
+// retourne une string ou LA PREMIERE OCCURENCE de target dans st est
+// remplacee par repl
+{
+  size_t pos = st.find(target);
+  if (pos==string::npos)
+    return st;
+  string ans = st.substr(0,pos) + repl + st.substr(pos+target.length(),string::npos);
+  return ans;
+}     // FIN string strReplace(string st,string target,string repl)
+// **********************************************************************
+
+void strReplaceInPlace(string &st,string target,string repl)
+// remplace LA PREMIERE OCCURENCE de target dans st par repl
+{
+  size_t pos = st.find(target);
+  if (pos==string::npos)
+    return ;
+  st.replace(pos,target.length(),repl);
+  return ;
+}     // FIN string strReplaceInPlace(string &st,string target,string repl)
+// **********************************************************************

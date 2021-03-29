@@ -13,6 +13,10 @@
 #include <fcntl.h>
 #include <sys/file.h>
 
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/times.h> 
+
 using namespace std;
 
 struct coord2
@@ -27,6 +31,13 @@ struct coord3
   short int y;
   short int z;
 };
+
+vector<string> findAllInString(string st,string variableName);
+// trouve les occurences de name=XXX ou nameXXX dans findInString
+// retourne le vecteur des XXX
+// examples findAllInString("L=13 L= 13 L=14 blabla autreL=toto ","L=") retournera "13", "14", "toto"
+// attention il faut donc plutot findAllInString("L=13 L= 13 L=14 blabla autreL=toto "," L=")
+// mais ds ce cas le PREMIER sera saute ... (en general 1er= #)
 
 int appendtofileblocking(char *filename,char *data,int timeout_insec);
 /*               PERMET DES ACCES CONCURENTS AU MEME FICHIER SANS TIMER
@@ -179,6 +190,13 @@ int ouvreFileNoClobber(char *nameout,FILE **ftout);
 // pas plus de 1000 suffixe 
 // retourn e 0:Ok  1,2:pas pu ouvrir en ecriture  3: plus de suffixe disponible
 
+void ouvreFileNoClobberForceExit(char *nameout,FILE **ftout,int force);
+// IL FAUT QUE nameout PUISSE ACCOMODER 5 CARACTERES DE PLUS !!!
+// ouvre en ecriture et si existe deja rajoute un suffixe 
+// pas plus de 1000 suffixe
+// si force on ne tente pas d'ajouter de suffixe (uniquement pour ecriture compacte)
+// si erreur: exit
+
 int getMem();  // returm the Virtual Memory Size in Kb
 
 class distribution
@@ -204,5 +222,67 @@ int sizeOfFileInBytes(char *filename);
 // du fichier, la taille est mise dans sizeOfFile
 // si erreur retourne NULL et sizeOfFile indetermine
 char *imageOfFile(char *filename,int *sizeOfFile);
+
+//************************************************************************
+//                      MESURE DU TEMSP ECOULE : class tempeur
+//************************************************************************
+// mesure le temps cpu/reel ecoule depuis l'instsntation de la classe
+// ou son reset
+// tempeur my; blalba ...; tempeur.print();
+// temper.reset();blalba ...; double tps=tempeur.getInSecond()
+class tempeur
+{
+ public:
+   struct tms timebufbegin;
+   double conversion;
+
+   tempeur();
+   ~tempeur(){};
+   void print(FILE*ft=stdout);
+   void reset();
+   double getInSecond(); // tps user + system
+};
+
+vector<string> tokenize(char *input,char *delim);
+// split en token qui sont separes par des separateur.
+// les separateurs sont tous les caracteres de delim
+// les separateurs en debut ou fin sont ignores
+// plusieurs separeteurs consecutifs dont merge en un seul
+
+string strReplace(string st,string target,string repl);
+// retourne une string ou LA PREMIERE OCCURENCE de target dans st est remplacee par repl
+
+void strReplaceInPlace(string &st,string target,string repl);
+// remplace LA PREMIERE OCCURENCE de target dans st par repl
+
+// Rmax a la valeur 256 par defaut et peut etre omise
+// si R>Rmax utilise la formule asymptotiquement vraie 4*Pi*R*R
+// retourne le nombre de point du cube a coordonnes entieres dont la distance
+// au centre est : R-1/2 < d <  R+1/2.
+// place maximum prise = Rmax doubles par defaut 256 doubles
+// le temps pour creer le vecteur pour 256 est ~0.6 secondes
+
+double nbPtsEntiersCubique(uint R,uint Rmax=256);
+double nbPtsEntiersCarre(uint R,uint Rmax=4096);
+// retourne le nombre de point du cube/carre a coordonnes entieres dont
+// la distance au centre est : R-1/2 < d <  R+1/2.
+// si R<Rmax denombre, sinon 4*Pi*R**2 ou 2*Pi*R
+// place maximum prise = Rmax doubles 
+// le temps pour creer le vecteur 3d pour 256 est ~0.6 secondes
+// le temps pour creer le vecteur 2d pour 4096 est ~0.3 secondes
+
+int nbPtsEntiersCubeExact(int R2,int R2maxp=0);
+int nbPtsEntiersCarreExact(int R2,int R2maxp=0);
+// retourne le nombre de points du cube a coordonnees entieres
+// dont le carre de la distance a l'origine est R2.
+// au premier appel on calcule par enumeration lle table :
+//   i) soit on a donne un deuxieme argument qui est la longueur max
+//      que l'on va utiliser, on utiliser alors (max(128,cette valeur))
+//   ii) si pas fourni on prend _R2MAXDEF
+// si R2 demande le necessite ON REFAIT TOUT AVEC le nouveau R2Max
+// EN RESUME:
+// si on sait que l'on va utiliser avec la plus grande valeur RM
+// on commence par un appel nbPtsEntiersCubeExact(x,RM);
+// puis nbPtsEntiersCubeExact(y);
 
 #endif

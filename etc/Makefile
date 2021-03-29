@@ -1,24 +1,39 @@
-CPPFLAGS = -Wall -O3
+libfilage.a:filage.o filagecpp.o  Makefile
+	ar q libfilage.a filage.o filagecpp.o
 
+all: writec writecpp writef readc readcpp readf xtractcomments
 
-libetc.a : libetc.o Makefile
-	rm -f libetc.a
-	ar q libetc.a libetc.o
+install: libfilage.a xtractcomments filage.h Makefile
+	cp -f libfilage.a ~/lib/
+	cp -f filage.h ~/include/
+	cp -f xtractcomments ~/bin/
 
-libetc.o: libetc.cpp etc.h Makefile
-	g++ -c libetc.cpp -I . -I ~/include $(CPPFLAGS)
+writec: writec.c filage.o Makefile
+	gcc writec.c -o writec filage.o -fPIC
 
-call: call.cpp  libetc.a Makefile
-	g++ call.cpp -o call -I . -L . -letc $(CPPFLAGS)
+readc: readc.c filage.o Makefile
+	gcc readc.c -o readc filage.o -fPIC
 
-callD2: callD2.cpp  libetc.a Makefile
-	g++ callD2.cpp -o callD2 -I ~/include -I . -L . -letc $(CPPFLAGS)
+writecpp: writecpp.cpp filage.o Makefile
+	c++  writecpp.cpp -o writecpp filage.o -fPIC
 
-callHKd2: callHKd2.cpp  libetc.a Makefile
-	g++ callHKd2.cpp -o callHKd2 -I ~/include -I . -L . -letc -L ../alea -lh -L ../filage -lfilage $(CPPFLAGS)
+readcpp: readcpp.cpp filage.o Makefile
+	c++  readcpp.cpp -o readcpp filage.o -Wwrite-strings -fPIC
 
-callHKd3: callHKd3.cpp  libetc.a Makefile
-	g++ callHKd3.cpp -o callHKd3 -I ~/include -I . -L . -letc -L ../alea -lh -L ../filage -lfilage $(CPPFLAGS)
+writef: writef.F filage.o Makefile
+	gfortran-4.6 writef.F -o writef filage.o -g -fbackslash
+
+readf: readf.F filage.o Makefile
+	gfortran-4.6 readf.F -o readf filage.o -g -fbackslash
+
+filage.o: filage.c filage.h Makefile
+	gcc -c filage.c -Wall -O3 -fPIC
+
+filagecpp.o: filagecpp.cpp filagecpp.h Makefile
+	g++ -c filagecpp.cpp -Wall -O3 -fPIC
+
+xtractcomments:xtractcomments.cpp libfilage.a Makefile
+	c++ xtractcomments.cpp -o xtractcomments -I. -L. -lfilage -Wall -O3 -fPIC
 
 clean:
-	rm -f libetc.a libetjc.o call *~
+	rm -f libfilage.a  readc writecpp readf writec xtractcomments filage.o readcpp writef
