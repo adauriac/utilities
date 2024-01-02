@@ -1,3 +1,4 @@
+/* modif 2 */
 #ifndef _JC
 #define _JC
 #include <iostream>
